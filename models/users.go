@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/brettshollenberger/thrift-example/gen-go/users"
+	"github.com/jinzhu/gorm"
 )
 
 type User struct {
@@ -11,32 +11,28 @@ type User struct {
 	Email     string
 }
 
-type UsersModel struct{}
+type UsersModel struct {
+	db gorm.DB
+}
 
 type UsersModelInterface interface {
-	Find() (*User, error)
-	ToThrift(*User) *users.User
+	Find(id int64) (*User, error)
+	Create(user *User) (*User, error)
 }
 
-func NewUsersModel() *UsersModel {
-	return &UsersModel{}
+func NewUsersModel(db gorm.DB) *UsersModel {
+	return &UsersModel{db}
 }
 
-func (this *UsersModel) Find() (*User, error) {
-	return &User{
-		Id:        1,
-		FirstName: "Brett",
-		LastName:  "Cassette",
-		Email:     "brett.cassette@gmail.com",
-	}, nil
+func (this *UsersModel) Find(id int64) (*User, error) {
+	user := &User{}
+
+	this.db.First(&user, id)
+
+	return user, nil
 }
 
-func (this *UsersModel) ToThrift(user *User) *users.User {
-	thriftUser := users.NewUser()
-	thriftUser.Id = user.Id
-	thriftUser.FirstName = user.FirstName
-	thriftUser.LastName = user.LastName
-	thriftUser.Email = user.Email
-
-	return thriftUser
+func (this *UsersModel) Create(user *User) (*User, error) {
+	this.db.Create(&user)
+	return user, nil
 }

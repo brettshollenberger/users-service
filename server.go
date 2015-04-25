@@ -3,18 +3,16 @@ package main
 import (
 	"fmt"
 	"git.apache.org/thrift.git/lib/go/thrift"
-	// mthrift "github.com/brettshollenberger/minion/thrift"
 	"github.com/brettshollenberger/thrift-example/gen-go/users"
 	. "github.com/brettshollenberger/users-service/handlers"
-)
-
-const (
-	USERS_SERVICE string = "users"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 )
 
 func runServer(addr string) error {
 	var transport thrift.TServerTransport
 	var err error
+	var db gorm.DB
 
 	transport, err = thrift.NewTServerSocket(addr)
 
@@ -22,16 +20,12 @@ func runServer(addr string) error {
 		return err
 	}
 
+	db, err = gorm.Open("mysql", "root:@/users_service?charset=utf8&parseTime=True&loc=Local")
+
 	transportFactory := thrift.NewTFramedTransportFactory(thrift.NewTTransportFactory())
 	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
 
-	fmt.Printf("%T\n", transport)
-
-	usersHandler := NewUsersHandler()
-	// processor := mthrift.NewTMultiplexedProcessor()
-	// listener := mthrift.NewListener()
-
-	// processor.RegisterProcessor(USERS_SERVICE, *users.NewUsersServiceProcessor(usersHandler))
+	usersHandler := NewUsersHandler(db)
 	processor := users.NewUsersServiceProcessor(usersHandler)
 
 	server := thrift.NewTSimpleServer4(processor, transport, transportFactory, protocolFactory)
